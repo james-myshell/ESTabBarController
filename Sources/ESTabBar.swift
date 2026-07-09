@@ -197,15 +197,18 @@ internal extension ESTabBar /* Layout */ {
         }
         
         if isCustomizing {
-            for (idx, _) in tabBarItems.enumerated() {
-                tabBarButtons[idx].isHidden = false
-                moreContentView?.isHidden = true
+            moreContentView?.isHidden = true
+            for tabBarButton in tabBarButtons {
+                tabBarButton.isHidden = false
             }
             for (_, container) in containers.enumerated(){
                 container.isHidden = true
             }
         } else {
             for (idx, item) in tabBarItems.enumerated() {
+                guard idx < tabBarButtons.count else {
+                    continue
+                }
                 if let _ = item as? ESTabBarItem {
                     tabBarButtons[idx].isHidden = true
                 } else {
@@ -220,6 +223,10 @@ internal extension ESTabBar /* Layout */ {
             }
         }
         
+        guard !containers.isEmpty else {
+            return
+        }
+
         var layoutBaseSystem = true
         if let itemCustomPositioning = itemCustomPositioning {
             switch itemCustomPositioning {
@@ -230,7 +237,7 @@ internal extension ESTabBar /* Layout */ {
             }
         }
         
-        if layoutBaseSystem {
+        if layoutBaseSystem, tabBarButtons.count >= containers.count {
             // System itemPositioning
             for (idx, container) in containers.enumerated(){
                 if !tabBarButtons[idx].frame.isEmpty {
@@ -238,27 +245,26 @@ internal extension ESTabBar /* Layout */ {
                 }
             }
         } else {
-            // Custom itemPositioning
-            var x: CGFloat = itemEdgeInsets.left
-            var y: CGFloat = itemEdgeInsets.top
-            switch itemCustomPositioning! {
-            case .fillExcludeSeparator:
-                if y <= 0.0 {
-                    y += 1.0
-                }
-            default:
-                break
-            }
-            let width = bounds.size.width - itemEdgeInsets.left - itemEdgeInsets.right
-            let height = bounds.size.height - y - itemEdgeInsets.bottom
-            let eachWidth = itemWidth == 0.0 ? width / CGFloat(containers.count) : itemWidth
-            let eachSpacing = itemSpacing == 0.0 ? 0.0 : itemSpacing
-            
-            for container in containers {
-                container.frame = CGRect.init(x: x, y: y, width: eachWidth, height: height)
-                x += eachWidth
-                x += eachSpacing
-            }
+            layoutContainersManually()
+        }
+    }
+
+    func layoutContainersManually() {
+        var x: CGFloat = itemEdgeInsets.left
+        var y: CGFloat = itemEdgeInsets.top
+        if itemCustomPositioning == .fillExcludeSeparator, y <= 0.0 {
+            y += 1.0
+        }
+
+        let width = bounds.size.width - itemEdgeInsets.left - itemEdgeInsets.right
+        let height = bounds.size.height - y - itemEdgeInsets.bottom
+        let eachWidth = itemWidth == 0.0 ? width / CGFloat(containers.count) : itemWidth
+        let eachSpacing = itemSpacing == 0.0 ? 0.0 : itemSpacing
+
+        for container in containers {
+            container.frame = CGRect.init(x: x, y: y, width: eachWidth, height: height)
+            x += eachWidth
+            x += eachSpacing
         }
     }
 }
